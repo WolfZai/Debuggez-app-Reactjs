@@ -7,24 +7,34 @@ import "./style.scss";
 const Slider = () => {
   const { data } = useData();
   const [index, setIndex] = useState(0);
-  const byDateDesc = data?.focus.sort((evtA, evtB) =>
-    new Date(evtA.date) < new Date(evtB.date) ? -1 : 1
-  );
-  const nextCard = () => {
-    setTimeout(
-      () => setIndex(index < byDateDesc.length -1 ? index + 1 : 0),
-      5000
-    );
-  };
+  
+  const byDateDesc = data?.focus?.sort((evtA, evtB) =>
+    new Date(evtA.date) > new Date(evtB.date) ? -1 : 1
+  ) || [];
+  
   useEffect(() => {
-    nextCard();
-  });
+    if (byDateDesc.length === 0) {
+      return () => {}; // Retourner une fonction vide au lieu de undefined
+    }
+    
+    const interval = setInterval(() => {
+      setIndex((prevIndex) => 
+        prevIndex < byDateDesc.length - 1 ? prevIndex + 1 : 0
+      );
+    }, 5000);
+    
+    // Nettoyer l'intervalle quand le composant se démonte
+    return () => clearInterval(interval);
+  }, [byDateDesc.length]); // Dépendance sur la longueur du tableau
+  
   return (
     <div className="SlideCardList">
-      {byDateDesc?.map((event, idx) => (
-        <>
+      {byDateDesc?.map((event, idx) => {
+        const uniqueKey = `${idx}-${event.title}-${event.date}-${event.cover}`;
+        
+        return (
           <div
-            key={event.title}
+            key={uniqueKey}
             className={`SlideCard SlideCard--${
               index === idx ? "display" : "hide"
             }`}
@@ -38,20 +48,25 @@ const Slider = () => {
               </div>
             </div>
           </div>
-          <div className="SlideCard__paginationContainer">
-            <div className="SlideCard__pagination">
-              {byDateDesc.map((_, radioIdx) => (
-                <input
-                  key={`${event.id}`}
-                  type="radio"
-                  name="radio-button"
-                  checked={idx === radioIdx}
-                />
-              ))}
-            </div>
-          </div>
-        </>
-      ))}
+        );
+      })}
+      <div className="SlideCard__paginationContainer">
+        <div className="SlideCard__pagination">
+          {byDateDesc.map((event, radioIdx) => {
+            const radioKey = `radio-${radioIdx}-${event.title}-${event.date}-${event.cover}`;
+            
+            return (
+              <input
+                key={radioKey}
+                type="radio"
+                name="radio-button"
+                checked={index === radioIdx}
+                readOnly
+              />
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
